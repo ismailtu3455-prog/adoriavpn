@@ -42,11 +42,13 @@ async def background_payment_checker():
                         code = f"GIFT-{secrets.token_hex(4).upper()}"
                         await crud.create_gift_card(code, inv.days)
                         bot_info = await bot.me()
+                        buyer = await get_user(inv.user_id)
+                        buyer_name = buyer.first_name if buyer and buyer.first_name else "Кто-то"
                         try:
                             await bot.send_message(
                                 inv.user_id,
                                 "✅ Успешно оплачено!\nВаш подарок готов.",
-                                reply_markup=inline.share_gift_kb(code, inv.days, bot_info.username)
+                                reply_markup=inline.share_gift_kb(code, inv.days, bot_info.username, buyer_name)
                             )
                         except Exception:
                             pass

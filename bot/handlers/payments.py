@@ -76,7 +76,7 @@ async def cb_pay(c: CallbackQuery):
             code = f"GIFT-{secrets.token_hex(4).upper()}"
             await crud.create_gift_card(code, plan.days)
             bot_info = await c.bot.me()
-            await c.message.edit_text(f"✅ Успешно оплачено с баланса!\nВаш подарок готов.", reply_markup=inline.share_gift_kb(code, plan.days, bot_info.username))
+            await c.message.edit_text(f"✅ Успешно оплачено с баланса!\nВаш подарок готов.", reply_markup=inline.share_gift_kb(code, plan.days, bot_info.username, c.from_user.first_name))
         else:
             from ..services.delivery import deliver_vpn
             await deliver_vpn(c.bot, c.from_user.id, plan.days, is_purchase=True)
@@ -190,7 +190,7 @@ async def successful_payment(m: Message):
             code = f"GIFT-{secrets.token_hex(4).upper()}"
             await crud.create_gift_card(code, plan.days)
             bot_info = await m.bot.me()
-            await m.answer(f"✅ Успешно оплачено Звездами!\nВаш подарок готов.", reply_markup=inline.share_gift_kb(code, plan.days, bot_info.username))
+            await m.answer(f"✅ Успешно оплачено Звездами!\nВаш подарок готов.", reply_markup=inline.share_gift_kb(code, plan.days, bot_info.username, m.from_user.first_name))
         else:
             await deliver_vpn(m.bot, int(user_id), plan.days, is_purchase=True)
             await crud.process_referral_bonus(m.bot, int(user_id), float(orig_amount))

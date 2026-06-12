@@ -195,17 +195,17 @@ async def cb_my(c: CallbackQuery):
                                 # Здесь можно переименовать IP в красивое название
                                 # name_part = name_part.replace("ВАШ_IP_АДРЕС", "🇩🇪 Германия")
                                 sl = sl.split("#")[0] + "#" + urllib.parse.quote(name_part)
-                            links_text += f"<b>Сервер {idx+1} ({name_part}):</b>\n<blockquote><code>{sl}</code></blockquote>\n"
+                            links_text += f"<b>Сервер {idx+1} ({name_part}):</b>\n<blockquote expandable><code>{sl}</code></blockquote>\n"
         except Exception:
             pass
             
         if not links_text:
             if ws_link:
                 ws_link = ws_link.split("#")[0] + "#" + urllib.parse.quote("🛡 VPN (WS)")
-                links_text += f"<b>VLESS WS+TLS:</b>\n<blockquote><code>{ws_link}</code></blockquote>\n"
+                links_text += f"<b>VLESS WS+TLS:</b>\n<blockquote expandable><code>{ws_link}</code></blockquote>\n"
             if reality_link:
                 reality_link = reality_link.split("#")[0] + "#" + urllib.parse.quote("🛡 VPN (Reality)")
-                links_text += f"<b>VLESS Reality:</b>\n<blockquote><code>{reality_link}</code></blockquote>"
+                links_text += f"<b>VLESS Reality:</b>\n<blockquote expandable><code>{reality_link}</code></blockquote>"
         
         import datetime
         expires_at = client_data.get("expires_at", 0)
@@ -288,19 +288,19 @@ async def process_promo(m: Message, state: FSMContext):
         await m.answer("❌ Промокод не найден или недействителен.")
         return
     
-    if promo.uses_left == 0:
+    if promo.max_uses > 0 and promo.current_uses >= promo.max_uses:
         await m.answer("❌ Лимит использований этого промокода исчерпан.")
         return
         
     if promo.promo_type == "days":
         from ..services.delivery import deliver_vpn
         await deliver_vpn(m.bot, m.from_user.id, int(promo.value), is_purchase=False)
-        await crud.use_promocode(code)
+        await crud.increment_promo_uses(code)
         is_adm = await is_admin(m.from_user.id)
         await m.answer(f"✅ Промокод применен! Вы получили {int(promo.value)} дней бесплатно.", reply_markup=inline.main_menu(is_adm))
     elif promo.promo_type == "discount":
         await crud.update_user_promo(m.from_user.id, code)
-        await crud.use_promocode(code)
+        await crud.increment_promo_uses(code)
         is_adm = await is_admin(m.from_user.id)
         await m.answer(f"✅ Промокод на скидку {int(promo.value)}% активирован! Перейдите к покупке тарифа.", reply_markup=inline.main_menu(is_adm))
         

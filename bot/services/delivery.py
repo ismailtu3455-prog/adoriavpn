@@ -49,17 +49,17 @@ async def deliver_vpn(bot: Bot, user_id: int, days: int, is_purchase: bool = Fal
                                 # Здесь можно переименовать IP в красивое название
                                 # name_part = name_part.replace("ВАШ_IP_АДРЕС", "🇩🇪 Германия")
                                 sl = sl.split("#")[0] + "#" + urllib.parse.quote(name_part)
-                            links_text += f"<b>Сервер {idx+1} ({name_part}):</b>\n<blockquote><code>{sl}</code></blockquote>\n"
+                            links_text += f"<b>Сервер {idx+1} ({name_part}):</b>\n<blockquote expandable><code>{sl}</code></blockquote>\n"
         except Exception:
             pass
             
         if not links_text:
             if ws_link:
                 ws_link = ws_link.split("#")[0] + "#" + urllib.parse.quote("🛡 VPN (WS)")
-                links_text += f"<b>VLESS WS+TLS:</b>\n<blockquote><code>{ws_link}</code></blockquote>\n"
+                links_text += f"<b>VLESS WS+TLS:</b>\n<blockquote expandable><code>{ws_link}</code></blockquote>\n"
             if reality_link:
                 reality_link = reality_link.split("#")[0] + "#" + urllib.parse.quote("🛡 VPN (Reality)")
-                links_text += f"<b>VLESS Reality:</b>\n<blockquote><code>{reality_link}</code></blockquote>"
+                links_text += f"<b>VLESS Reality:</b>\n<blockquote expandable><code>{reality_link}</code></blockquote>"
         
         import datetime
         expires_at = client_data.get("expires_at", 0)

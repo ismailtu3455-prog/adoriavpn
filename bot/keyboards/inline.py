@@ -204,18 +204,19 @@ def withdrawal_decision_kb(w_id: int) -> InlineKeyboardMarkup:
     builder.row(InlineKeyboardButton(text="❌ Отказ", callback_data=f"adm:w_reject:{w_id}"))
     return builder.as_markup()
 
-def share_gift_kb(gift_code: str, days: int, bot_username: str) -> InlineKeyboardMarkup:
+def share_gift_kb(gift_code: str, days: int, bot_username: str, buyer_name: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     gift_link = f"https://t.me/{bot_username}?start={gift_code}"
     
     text = (
-        f"🎁 Премиум VPN уже доступен для тебя\n\n"
-        f"На {days} дней — бесплатно.\n\n"
-        f"🔥 Что внутри:\n"
-        f"• Без блокировок и ограничений\n"
-        f"• Стабильный быстрый канал\n"
-        f"• Полная защита трафика\n\n"
-        f"👉 Забрать доступ:"
+        f"🎉 {buyer_name} отправил тебе подарок!\n\n"
+        f"Привет, друг! 👋\n\n"
+        f"Для тебя подготовлен подарок — Premium VPN на {days} дней 🎁\n\n"
+        f"🔒 Безопасное соединение\n"
+        f"⚡ Высокая скорость\n"
+        f"🌍 Свободный доступ к любимым сервисам\n\n"
+        f"Забрать подарок:\n"
+        f"👉 {gift_link}"
     )
     import urllib.parse
     encoded_text = urllib.parse.quote(text)
