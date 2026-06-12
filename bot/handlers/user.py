@@ -401,7 +401,8 @@ async def cb_my(c: CallbackQuery):
         await c.message.edit_text(text, reply_markup=inline.client_kb(balance))
     except Exception as e:
         if "not_found" in str(e).lower() or "404" in str(e):
-            await c.message.edit_text("❌ Ваш VPN ключ был удален (возможно, истек срок действия). Перейдите в меню покупок, чтобы получить новый ключ.", reply_markup=inline.back_kb())
+            text = profile_text + "❌ <b>Внимание:</b> Ваш VPN ключ был удален сервером (возможно, истек срок действия).\n\nПерейдите в меню покупок, чтобы получить новый ключ."
+            await c.message.edit_text(text, reply_markup=inline.no_client_kb(balance))
         else:
             await c.answer(f"Ошибка VPN API: {e}", show_alert=True)
         return
