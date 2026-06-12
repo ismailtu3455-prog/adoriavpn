@@ -75,14 +75,183 @@ async def cmd_start(m: Message, command: CommandObject):
     elif not is_new and ref_id and m.from_user.id not in [8051703053]:
         await m.answer("ℹ️ Вы уже были зарегистрированы в боте ранее, поэтому реферальный бонус не применяется.")
 
+    user = await crud.get_user(m.from_user.id)
+    
+    # Check mandatory sub
+    from ..config import db_settings
+    main_channel_id = db_settings.get("main_channel_id")
+    if main_channel_id and user and not user.tos_accepted:
+        try:
+            member = await m.bot.get_chat_member(main_channel_id, m.from_user.id)
+            if member.status in ["member", "administrator", "creator"]:
+                await crud.update_user_tos_accepted(m.from_user.id)
+                user.tos_accepted = True
+        except Exception:
+            pass
+            
+    if main_channel_id and (not user or not user.tos_accepted):
+        main_channel_url = db_settings.get("main_channel_url", "https://t.me/durov")
+        await m.answer(
+            "👋 <b>Добро пожаловать!</b>\n\n"
+            "Чтобы продолжить пользоваться VPN-ботом, пожалуйста, подпишитесь на наш основной канал, "
+            "а также ознакомьтесь с Правилами использования и Политикой конфиденциальности.\n\n"
+            "После подписки нажмите кнопку <b>«✅ Я подписался и согласен»</b>.",
+            reply_markup=inline.mandatory_sub_kb(main_channel_url)
+        )
+        return
+
     is_adm = await is_admin(m.from_user.id)
-    await m.answer(texts.START, reply_markup=inline.main_menu(is_adm))
+    await m.answer(f"✅ Баланс успешно пополнен на {amount} ₽!", reply_markup=inline.main_menu(is_adm))
+
+@router.callback_query(F.data == "reissue_key")
+async def cb_reissue_key(c: CallbackQuery):
+    user = await crud.get_user(c.from_user.id)
+    if not user or not user.vpn_name:
+        await c.answer("У вас нет активного VPN.", show_alert=True)
+        return
+        
+    import datetime
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    if user.last_reissue and (now - user.last_reissue).days < 30:
+        builder = InlineKeyboardBuilder()
+        builder.row(InlineKeyboardButton(text="💳 Оплатить перевыпуск (50 ₽)", callback_data="pay_reissue_50"))
+        builder.row(InlineKeyboardButton(text="Назад", callback_data="my"))
+        await c.message.edit_text(
+            "⚠️ Вы уже перевыпускали ключ за последние 30 дней.\n"
+            "Бесплатный перевыпуск доступен только 1 раз в месяц.\n"
+            "Вы можете перевыпустить ключ платно за <b>50 ₽</b> (снимется с внутреннего баланса).",
+            reply_markup=builder.as_markup()
+        )
+        return
+        
+    await _do_reissue(c, user, now)
+
+@router.callback_query(F.data == "pay_reissue_50")
+async def cb_pay_reissue_50(c: CallbackQuery):
+    user = await crud.get_user(c.from_user.id)
+    if not user or not user.vpn_name:
+        return
+        
+    if user.balance < 50:
+        await c.answer("❌ Недостаточно средств на балансе! Пожалуйста, пополните баланс.", show_alert=True)
+        return
+        
+    import datetime
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    await crud.add_user_balance(user.user_id, -50)
+    await _do_reissue(c, user, now)
+
+async def _do_reissue(c: CallbackQuery, user, now):
+    await c.message.edit_text("🔄 Перевыпуск ключа... Пожалуйста, подождите.")
+    
+    try:
+        data = await vpn.get_client(user.vpn_name)
+        client_data = data.get("client") or data
+    except Exception as e:
+        await c.message.edit_text("❌ Ошибка: клиент не найден на сервере.", reply_markup=inline.back_kb())
+        return
+        
+    expire = client_data.get("expire", 0)
+    limit_bytes = client_data.get("traffic_limit_bytes", 0)
+    limit_gb = int(limit_bytes / (1024**3))
+    
+    days_left = 0
+    import datetime
+    if expire > 0:
+        exp_date = datetime.datetime.fromtimestamp(expire)
+        diff = (exp_date - now).days
+        days_left = max(0, diff)
+        
+    try:
+        await vpn.delete_client(user.vpn_name)
+        await vpn.create_client(user.vpn_name, days_left, limit_gb)
+    except Exception as e:
+        await c.message.edit_text("❌ Произошла ошибка при создании нового ключа.", reply_markup=inline.back_kb())
+        return
+        
+    from sqlalchemy.ext.asyncio import AsyncSessionLocal
+    from sqlalchemy import update
+    from ..database.models import User
+    
+    async with AsyncSessionLocal() as session:
+        await session.execute(update(User).where(User.user_id == user.user_id).values(last_reissue=now))
+        await session.commit()
+        
+    is_adm = await is_admin(user.user_id)
+    await c.message.edit_text(
+        "✅ <b>Ключ успешно перевыпущен!</b>\n\n"
+        "⚠️ <b>ВНИМАНИЕ:</b> Старый ключ удалён. Чтобы интернет снова заработал, "
+        "обязательно зайдите в приложение (Hiddify/Happ) и нажмите кнопку <b>Обновить подписку</b> "
+        "(или потяните экран вниз)!",
+        reply_markup=inline.main_menu(is_adm)
+    )
+
+@router.callback_query(F.data == "withdraw")
+async def cb_withdraw(c: CallbackQuery, state: FSMContext):
+    user = await crud.get_user(c.from_user.id)
+    if not user or user.balance < 500:
+        return await c.answer("❌ Минимальная сумма для вывода: 500 ₽", show_alert=True)
+        
+    await c.message.edit_text("💸 <b>Вывод средств</b>\n\nОтправьте реквизиты для перевода (Например: Сбербанк, 1234567890123456, Иван И.):", reply_markup=inline.back_to_buy_kb())
+    await state.set_state(WithdrawalState.wait_for_details)
+    await state.update_data(w_amount=user.balance)
 
 @router.callback_query(F.data == "back")
 async def cb_back(c: CallbackQuery):
     is_adm = await is_admin(c.from_user.id)
     await c.message.edit_text(texts.START, reply_markup=inline.main_menu(is_adm))
     await c.answer()
+
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton
+
+@router.callback_query(F.data == "show_tos")
+async def cb_show_tos(c: CallbackQuery):
+    tos_text = (
+        "📜 <b>Пользовательское соглашение и Политика конфиденциальности</b>\n\n"
+        "1. Запрещено использовать VPN для незаконной деятельности, спама, взлома и т.д.\n"
+        "2. Мы не храним логи ваших действий в сети (no-logs policy).\n"
+        "3. Возврат средств осуществляется по усмотрению администрации при технических неполадках.\n"
+        "4. Приобретая подписку, вы соглашаетесь с данными правилами.\n\n"
+        "<i>Нажмите «Назад», чтобы вернуться.</i>"
+    )
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="Назад", callback_data="back_to_mandatory"))
+    await c.message.edit_text(tos_text, reply_markup=builder.as_markup())
+
+@router.callback_query(F.data == "back_to_mandatory")
+async def cb_back_to_mandatory(c: CallbackQuery):
+    from ..config import db_settings
+    main_channel_url = db_settings.get("main_channel_url", "https://t.me/durov")
+    await c.message.edit_text(
+        "👋 <b>Добро пожаловать!</b>\n\n"
+        "Чтобы продолжить пользоваться VPN-ботом, пожалуйста, подпишитесь на наш основной канал, "
+        "а также ознакомьтесь с Правилами использования и Политикой конфиденциальности.\n\n"
+        "После подписки нажмите кнопку <b>«✅ Я подписался и согласен»</b>.",
+        reply_markup=inline.mandatory_sub_kb(main_channel_url)
+    )
+
+@router.callback_query(F.data == "check_mandatory_sub")
+async def cb_check_mandatory_sub(c: CallbackQuery):
+    from ..config import db_settings
+    main_channel_id = db_settings.get("main_channel_id")
+    if not main_channel_id:
+        await crud.update_user_tos_accepted(c.from_user.id)
+        is_adm = await is_admin(c.from_user.id)
+        await c.message.edit_text(texts.START, reply_markup=inline.main_menu(is_adm))
+        return
+
+    try:
+        member = await c.bot.get_chat_member(main_channel_id, c.from_user.id)
+        if member.status in ["member", "administrator", "creator"]:
+            await crud.update_user_tos_accepted(c.from_user.id)
+            is_adm = await is_admin(c.from_user.id)
+            await c.message.edit_text(texts.START, reply_markup=inline.main_menu(is_adm))
+            await c.answer("✅ Подписка подтверждена!", show_alert=True)
+        else:
+            await c.answer("❌ Вы не подписались на канал!", show_alert=True)
+    except Exception:
+        await c.answer("❌ Ошибка проверки. Возможно бот не админ в канале.", show_alert=True)
 
 @router.callback_query(F.data == "help")
 async def cb_help(c: CallbackQuery):

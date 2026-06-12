@@ -56,6 +56,14 @@ async def init_db():
             await conn.execute(text("ALTER TABLE invoices ADD COLUMN is_gift BOOLEAN DEFAULT 0"))
         except Exception:
             pass
+        try:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN last_reissue DATETIME"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN tos_accepted BOOLEAN DEFAULT 0"))
+        except Exception:
+            pass
             
     # Default plans if empty
     async with AsyncSessionLocal() as session:
@@ -308,6 +316,11 @@ async def update_user_test_taken(user_id: int, taken: bool = True):
 async def update_user_reminders(user_id: int, expiry: int, milestone: int):
     async with AsyncSessionLocal() as session:
         await session.execute(update(User).where(User.user_id == user_id).values(last_reminded_expiry=expiry, last_reminded_milestone=milestone))
+        await session.commit()
+
+async def update_user_tos_accepted(user_id: int, accepted: bool = True):
+    async with AsyncSessionLocal() as session:
+        await session.execute(update(User).where(User.user_id == user_id).values(tos_accepted=accepted))
         await session.commit()
 
 async def add_user_balance(user_id: int, amount: float):

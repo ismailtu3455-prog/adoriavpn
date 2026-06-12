@@ -587,11 +587,56 @@ async def process_set_limit(m: Message, state: FSMContext):
     await state.clear()
 
 # --- Channel Setup ---
-@router.callback_query(F.data == "adm:paychannel")
-async def cb_paychannel(c: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "adm:channels_setup")
+async def cb_channels_setup(c: CallbackQuery):
+    await c.message.edit_text("⚙️ <b>Настройки каналов</b>\nВыберите, какой канал настроить:", reply_markup=inline.admin_channels_setup_kb())
+
+@router.callback_query(F.data == "adm:set_main_channel")
+async def cb_set_main_channel(c: CallbackQuery, state: FSMContext):
     bot_me = await c.bot.me()
     await c.message.edit_text(
-        "Отправьте ID канала (начинается с -100) или перешлите сообщение из него.\n\n"
+        "📢 <b>Настройка основного канала (Обяз. подписка)</b>\n\n"
+        "Отправьте пересланное сообщение из вашего канала.\n"
+        "⚠️ <b>Обязательно:</b> Бот должен быть администратором в этом канале с правом приглашать пользователей.\n"
+        "Для удобства нажмите кнопку ниже, добавьте бота в канал, а затем перешлите сюда любое сообщение оттуда.\n\n"
+        "Отправьте 0, чтобы отключить обязательную подписку.",
+        reply_markup=inline.admin_channel_setup_kb(bot_me.username)
+    )
+    await state.set_state(AdminSettingsState.wait_for_main_channel)
+
+@router.message(AdminSettingsState.wait_for_main_channel)
+async def process_main_channel(m: Message, state: FSMContext):
+    if m.text and m.text.strip() == "0":
+        await crud.set_setting("main_channel_id", None)
+        await crud.set_setting("main_channel_url", None)
+        db_settings["main_channel_id"] = None
+        db_settings["main_channel_url"] = None
+        await m.answer("✅ Обязательная подписка отключена!", reply_markup=inline.admin_menu_kb())
+        await state.clear()
+        return
+
+    if not m.forward_from_chat or m.forward_from_chat.type != "channel":
+        await m.answer("❌ Это не пересланное сообщение из канала. Попробуйте еще раз или отправьте 0 для отмены.")
+        return
+        
+    chat_id = m.forward_from_chat.id
+    try:
+        invite_link = await m.bot.export_chat_invite_link(chat_id)
+        await crud.set_setting("main_channel_id", str(chat_id))
+        await crud.set_setting("main_channel_url", invite_link)
+        db_settings["main_channel_id"] = str(chat_id)
+        db_settings["main_channel_url"] = invite_link
+        await m.answer("✅ Основной канал успешно установлен!", reply_markup=inline.admin_menu_kb())
+        await state.clear()
+    except Exception as e:
+        await m.answer(f"❌ Ошибка. Убедитесь, что бот является администратором канала. Детали: {e}")
+
+@router.callback_query(F.data == "adm:set_pay_channel")
+async def cb_set_paychannel(c: CallbackQuery, state: FSMContext):
+    bot_me = await c.bot.me()
+    await c.message.edit_text(
+        "🔔 <b>Настройка канала уведомлений (Логи покупок)</b>\n\n"
+        "Отправьте пересланное сообщение из вашего канала.\n"
         "⚠️ <b>Обязательно:</b> Бот должен быть администратором в этом канале с правом публикации сообщений.\n"
         "Для удобства можете нажать кнопку ниже, чтобы добавить бота в свой канал.\n\n"
         "Отправьте 0, чтобы отключить уведомления.",
@@ -601,13 +646,17 @@ async def cb_paychannel(c: CallbackQuery, state: FSMContext):
 
 @router.message(AdminSettingsState.wait_for_payment_channel)
 async def process_paychannel(m: Message, state: FSMContext):
+    if m.text and m.text.strip() == "0":
+        await crud.set_setting("payment_channel_id", None)
+        db_settings["payment_channel_id"] = None
+        await m.answer("✅ Канал для уведомлений отключен!", reply_markup=inline.admin_menu_kb())
+        await state.clear()
+        return
+        
     if m.forward_from_chat and m.forward_from_chat.type == "channel":
         val = str(m.forward_from_chat.id)
     else:
         val = m.text.strip()
-        
-    if val == "0":
-        val = None
         
     await crud.set_setting("payment_channel_id", val)
     db_settings["payment_channel_id"] = val

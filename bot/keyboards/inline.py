@@ -71,6 +71,7 @@ def client_kb(balance: float = 0) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="Продлить", callback_data="buy"))
     builder.row(InlineKeyboardButton(text="🎁 Купить в подарок", callback_data="buy_gift"))
+    builder.row(InlineKeyboardButton(text="🔄 Перевыпустить ключ", callback_data="reissue_key"))
     if balance > 0:
         builder.row(InlineKeyboardButton(text="💸 Вывод средств", callback_data="withdraw"))
     builder.row(InlineKeyboardButton(text="Инструкция", callback_data="help"))
@@ -84,6 +85,13 @@ def no_client_kb(balance: float = 0) -> InlineKeyboardMarkup:
     if balance > 0:
         builder.row(InlineKeyboardButton(text="💸 Вывод средств", callback_data="withdraw"))
     builder.row(InlineKeyboardButton(text="Назад", callback_data="back"))
+    return builder.as_markup()
+
+def mandatory_sub_kb(channel_url: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📢 Подписаться на канал", url=channel_url))
+    builder.row(InlineKeyboardButton(text="📄 Правила и Политика", callback_data="show_tos"))
+    builder.row(InlineKeyboardButton(text="✅ Я подписался и согласен", callback_data="check_mandatory_sub"))
     return builder.as_markup()
 
 def admin_menu_kb() -> InlineKeyboardMarkup:
@@ -110,8 +118,21 @@ def admin_manage_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="📋 Тарифы", callback_data="adm:plans"),
                 InlineKeyboardButton(text="🎟 Промо", callback_data="adm:promos"))
     
-    builder.row(InlineKeyboardButton(text="🔔 Канал уведомлений", callback_data="adm:paychannel"))
+    builder.row(InlineKeyboardButton(text="⚙️ Настройки каналов", callback_data="adm:channels_setup"))
     builder.row(InlineKeyboardButton(text="Назад", callback_data="adm:home"))
+    return builder.as_markup()
+
+def admin_channels_setup_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📢 Основной канал (Обяз. подписка)", callback_data="adm:set_main_channel"))
+    builder.row(InlineKeyboardButton(text="🔔 Канал уведомлений (Логи покупок)", callback_data="adm:set_pay_channel"))
+    builder.row(InlineKeyboardButton(text="Назад", callback_data="adm:manage"))
+    return builder.as_markup()
+
+def admin_channel_setup_kb(bot_username: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="🤖 Добавить бота в канал (Админом)", url=f"https://t.me/{bot_username}?startchannel=true&admin=post_messages,invite_users"))
+    builder.row(InlineKeyboardButton(text="Отмена", callback_data="adm:channels_setup"))
     return builder.as_markup()
 
 def admin_list_kb(admins: list) -> InlineKeyboardMarkup:

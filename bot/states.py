@@ -34,6 +34,7 @@ class AdminSettingsState(StatesGroup):
     wait_for_test_days = State()
     wait_for_limit_gb = State()
     wait_for_payment_channel = State()
+    wait_for_main_channel = State()
 
 class UserState(StatesGroup):
     wait_for_promo = State()

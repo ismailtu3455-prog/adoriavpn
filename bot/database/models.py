@@ -33,6 +33,9 @@ class User(Base):
     last_reminded_expiry: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     last_reminded_milestone: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
+    last_reissue: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    tos_accepted: Mapped[bool] = mapped_column(Boolean, default=False)
+    
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
     last_seen: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
     
