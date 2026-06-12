@@ -33,7 +33,9 @@ async def sub_handler(request: web.Request) -> web.Response:
     headers = {
         "subscription-userinfo": f"upload=0; download={used_bytes}; total={limit_bytes}; expire={expire_ts}",
         "profile-update-interval": "1",
-        "profile-title": "Adoria VPN"
+        "profile-title": "Adoria VPN",
+        "profile-web-page-url": "https://t.me/Adoria_funbot",
+        "support-url": "https://t.me/Adoria_funbot"
     }
     
     sub_links = []
@@ -59,16 +61,6 @@ async def sub_handler(request: web.Request) -> web.Response:
     
     # Красивые названия серверов
     final_links = []
-    
-    uuid = client.get("uuid", "00000000-0000-0000-0000-000000000000")
-    
-    def make_dummy(text: str) -> str:
-        safe_text = urllib.parse.quote(text, safe="")
-        return f"vless://{uuid}@1.1.1.1:443?encryption=none&security=none&type=tcp#{safe_text}"
-        
-    final_links.append(make_dummy("🚀 Надежный VLESS VPN"))
-    final_links.append(make_dummy("🛡️ Обходит блокировки"))
-    final_links.append(make_dummy("💨 Не режет скорость"))
     
     for sl in sub_links:
         if "#" in sl:
