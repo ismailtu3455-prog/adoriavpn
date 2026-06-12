@@ -192,8 +192,9 @@ async def cb_my(c: CallbackQuery):
                             name_part = "VPN"
                             if "#" in sl:
                                 name_part = urllib.parse.unquote(sl.split("#")[1])
-                                # Здесь можно переименовать IP в красивое название
-                                # name_part = name_part.replace("ВАШ_IP_АДРЕС", "🇩🇪 Германия")
+                                # Красивые названия
+                                name_part = name_part.replace("193.23.199.80", "🇩🇪 Германия")
+                                name_part = name_part.replace("FI-Финляндия", "🇫🇮 Финляндия")
                                 sl = sl.split("#")[0] + "#" + urllib.parse.quote(name_part)
                             links_text += f"<b>Сервер {idx+1} ({name_part}):</b>\n<blockquote expandable><code>{sl}</code></blockquote>\n"
         except Exception:
