@@ -46,29 +46,30 @@ async def sub_handler(request: web.Request) -> web.Response:
             async with aiohttp.ClientSession() as s:
                 async with s.get(original_sub) as r:
                     text = await r.text()
-                    decoded = base64.b64decode(text).decode('utf-8')
-                    sub_links = [l.strip() for l in decoded.split('\n') if l.strip().startswith('vless://')]
+                    links_in_text = [l.strip() for l in text.split('\n') if l.strip().startswith('vless://')]
+                    if links_in_text:
+                        sub_links = links_in_text
+                    else:
+                        decoded = base64.b64decode(text).decode('utf-8')
+                        sub_links = [l.strip() for l in decoded.split('\n') if l.strip().startswith('vless://')]
         except Exception as e:
             log.error(f"Failed to fetch original sub: {e}")
             
     if not sub_links:
-        # Fallback to direct links if sub_url failed
         links = client.get("links", {})
         sub_links = [l for l in links.values() if l and l.startswith('vless://')]
     
-    uuid = client.get("uuid", "00000000-0000-0000-0000-000000000000")
+    # Красивые названия серверов
+    final_links = []
+    for sl in sub_links:
+        if "#" in sl:
+            name_part = urllib.parse.unquote(sl.split("#")[1])
+            name_part = name_part.replace("193.23.199.80", "🇩🇪 Германия")
+            name_part = name_part.replace("FI-Финляндия", "🇫🇮 Финляндия")
+            sl = sl.split("#")[0] + "#" + urllib.parse.quote(name_part)
+        final_links.append(sl)
     
-    def make_dummy(text: str) -> str:
-        safe_text = urllib.parse.quote(text, safe="")
-        return f"vless://{uuid}@1.1.1.1:443?encryption=none&security=none&type=tcp#{safe_text}"
-        
-    lines = []
-    lines.append(make_dummy("⚡ Нет рекламы на YouTube"))
-    lines.append(make_dummy("⭐ Работает везде"))
-    lines.append(make_dummy("🎮 Игровой сервер"))
-    lines.extend(sub_links)
-    
-    content = "\n".join(lines)
+    content = "\n".join(final_links)
     base64_content = base64.b64encode(content.encode('utf-8')).decode('utf-8')
     
     return web.Response(text=base64_content, headers=headers)
