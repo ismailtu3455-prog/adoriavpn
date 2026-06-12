@@ -153,6 +153,13 @@ async def _do_reissue(c: CallbackQuery, user, now):
         diff = (exp_date - now).days
         days_left = max(0, diff)
         
+    if days_left == 0 and expire > 0:
+        await c.message.edit_text("❌ Ваш ключ уже истек. Перевыпуск невозможен. Пожалуйста, продлите подписку.", reply_markup=inline.back_kb())
+        return
+    elif days_left == 0 and expire == 0:
+        # Безлимитный по времени ключ
+        pass
+        
     try:
         await vpn.delete_client(user.vpn_name)
         await vpn.create_client(user.vpn_name, days_left, limit_gb)

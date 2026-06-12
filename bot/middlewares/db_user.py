@@ -26,4 +26,21 @@ class DbUserMiddleware(BaseMiddleware):
                 last_name=user.last_name
             )
             
+            # Проверяем обязательную подписку и правила
+            if event.message and event.message.text and event.message.text.startswith("/start"):
+                pass # Разрешаем /start
+            elif isinstance(event, CallbackQuery) and event.data in ["check_mandatory_sub", "show_tos", "back_to_mandatory"]:
+                pass # Разрешаем кнопки подписки
+            else:
+                from ..config import db_settings
+                main_channel_id = db_settings.get("main_channel_id")
+                if main_channel_id:
+                    db_user = await crud.get_user(user.id)
+                    if not db_user or not db_user.tos_accepted:
+                        if isinstance(event, CallbackQuery):
+                            await event.answer("⚠️ Пожалуйста, примите правила и подпишитесь на канал через /start", show_alert=True)
+                        elif isinstance(event, Message):
+                            await event.answer("⚠️ <b>Обязательное действие</b>\nПожалуйста, введите /start чтобы подписаться на канал и принять правила.")
+                        return # Блокируем дальнейшее выполнение
+            
         return await handler(event, data)
