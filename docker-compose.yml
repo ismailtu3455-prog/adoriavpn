@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  vpn-bot:
+    build: .
+    container_name: vless-vpn-bot-v2
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./bot.db:/app/bot.db
