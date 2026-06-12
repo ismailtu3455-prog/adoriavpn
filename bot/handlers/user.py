@@ -101,7 +101,7 @@ async def cmd_start(m: Message, command: CommandObject):
         return
 
     is_adm = await is_admin(m.from_user.id)
-    await m.answer(f"✅ Баланс успешно пополнен на {amount} ₽!", reply_markup=inline.main_menu(is_adm))
+    await m.answer(texts.START, reply_markup=inline.main_menu(is_adm))
 
 @router.callback_query(F.data == "reissue_key")
 async def cb_reissue_key(c: CallbackQuery):
