@@ -28,7 +28,6 @@ async def sub_handler(request: web.Request) -> web.Response:
         
     # Get traffic stats
     limit_bytes = client.get("traffic_limit_bytes", 0)
-    # If limit_bytes is 0, it means it's truly unlimited.
         
     used_bytes = client.get("used_bytes", 0)
     expire_ts = client.get("expire", 0)
