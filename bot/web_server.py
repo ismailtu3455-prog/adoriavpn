@@ -35,14 +35,8 @@ async def sub_handler(request: web.Request) -> web.Response:
     host = request.headers.get("Host", "127.0.0.1:8080")
     info_url = f"http://{host}/info/{user_id}"
 
-    userinfo_parts = [f"upload=0", f"download={used_bytes}"]
-    if limit_bytes > 0:
-        userinfo_parts.append(f"total={limit_bytes}")
-    if expire_ts > 0:
-        userinfo_parts.append(f"expire={expire_ts}")
-
     headers = {
-        "subscription-userinfo": "; ".join(userinfo_parts),
+        "subscription-userinfo": f"upload=0; download={used_bytes}; total={limit_bytes}; expire={expire_ts}",
         "profile-update-interval": "1",
         "profile-title": "Adoria VPN",
         "profile-web-page-url": info_url,
