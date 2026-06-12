@@ -28,6 +28,8 @@ async def sub_handler(request: web.Request) -> web.Response:
         
     # Get traffic stats
     limit_bytes = client.get("traffic_limit_bytes", 0)
+    if not limit_bytes or limit_bytes == 0:
+        limit_bytes = 1000000 * 1024**3 # 1kk GB fallback for progress bar
         
     used_bytes = client.get("used_bytes", 0)
     expire_ts = client.get("expire", 0)
@@ -35,10 +37,7 @@ async def sub_handler(request: web.Request) -> web.Response:
     host = request.headers.get("Host", "127.0.0.1:8080")
     info_url = f"http://{host}/info/{user_id}"
 
-    userinfo_parts = [f"upload=0", f"download={used_bytes}"]
-    if limit_bytes > 0:
-        userinfo_parts.append(f"total={limit_bytes}")
-    userinfo_parts.append(f"expire={expire_ts}")
+    userinfo_parts = [f"upload=0", f"download={used_bytes}", f"total={limit_bytes}", f"expire={expire_ts}"]
 
     headers = {
         "subscription-userinfo": "; ".join(userinfo_parts),
