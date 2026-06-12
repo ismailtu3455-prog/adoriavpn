@@ -28,11 +28,9 @@ async def sub_handler(request: web.Request) -> web.Response:
         
     # Get traffic stats
     limit_bytes = client.get("traffic_limit_bytes", 0)
-    if not limit_bytes or limit_bytes == 0:
-        default_limit = int(db_settings.get("default_limit_gb", 175))
-        if default_limit == 0:
-            default_limit = 175
-        limit_bytes = default_limit * 1024**3
+    
+    # If admin defaults are used for newly created clients, their limit_bytes will be > 0.
+    # If it's 0, it means it's truly unlimited.
         
     used_bytes = client.get("used_bytes", 0)
     expire_ts = client.get("expire", 0)
@@ -40,8 +38,13 @@ async def sub_handler(request: web.Request) -> web.Response:
     host = request.headers.get("Host", "127.0.0.1:8080")
     info_url = f"http://{host}/info/{user_id}"
 
+    userinfo_parts = [f"upload=0", f"download={used_bytes}"]
+    if limit_bytes > 0:
+        userinfo_parts.append(f"total={limit_bytes}")
+    userinfo_parts.append(f"expire={expire_ts}")
+
     headers = {
-        "subscription-userinfo": f"upload=0; download={used_bytes}; total={limit_bytes}; expire={expire_ts}",
+        "subscription-userinfo": "; ".join(userinfo_parts),
         "profile-update-interval": "1",
         "profile-title": "Adoria VPN",
         "profile-web-page-url": info_url,
@@ -106,14 +109,9 @@ async def handle_info(request: web.Request) -> web.Response:
     uuid = client.get("uuid", "Неизвестно")
     used_bytes = client.get("used_bytes", 0)
     limit_bytes = client.get("traffic_limit_bytes", 0)
-    if not limit_bytes or limit_bytes == 0:
-        default_limit = int(db_settings.get("default_limit_gb", 175))
-        if default_limit == 0:
-            default_limit = 175
-        limit_bytes = default_limit * 1024**3
     
     used_gb = round(used_bytes / (1024**3), 2)
-    limit_text = f"{round(limit_bytes / (1024**3), 2)} GB"
+    limit_text = "∞" if not limit_bytes or limit_bytes == 0 else f"{round(limit_bytes / (1024**3), 2)} GB"
     
     html = f"""<!DOCTYPE html>
 <html>
