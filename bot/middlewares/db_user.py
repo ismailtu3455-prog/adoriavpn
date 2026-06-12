@@ -27,7 +27,7 @@ class DbUserMiddleware(BaseMiddleware):
             )
             
             # Проверяем обязательную подписку и правила
-            if event.message and event.message.text and event.message.text.startswith("/start"):
+            if isinstance(event, Message) and event.text and event.text.startswith("/start"):
                 pass # Разрешаем /start
             elif isinstance(event, CallbackQuery) and event.data in ["check_mandatory_sub", "show_tos", "back_to_mandatory"]:
                 pass # Разрешаем кнопки подписки
