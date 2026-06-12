@@ -285,9 +285,17 @@ async def cb_enter_promo(c: CallbackQuery, state: FSMContext):
     await c.message.edit_text("Отправьте промокод:", reply_markup=inline.back_to_buy_kb())
     await state.set_state(UserState.wait_for_promo)
 
+@router.message(F.text.startswith("/promo_"))
+async def process_promo_command(m: Message, state: FSMContext):
+    code = m.text.replace("/promo_", "").strip()
+    await _apply_promo(m, code, state)
+
 @router.message(UserState.wait_for_promo)
 async def process_promo(m: Message, state: FSMContext):
     code = m.text.strip()
+    await _apply_promo(m, code, state)
+
+async def _apply_promo(m: Message, code: str, state: FSMContext):
     promo = await crud.get_promocode(code)
     if not promo:
         await m.answer("❌ Промокод не найден или недействителен.")
