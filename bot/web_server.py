@@ -26,8 +26,6 @@ async def sub_handler(request: web.Request) -> web.Response:
         
     # Get traffic stats
     limit_bytes = client.get("traffic_limit_bytes", 0)
-    if not limit_bytes or limit_bytes == 0:
-        limit_bytes = 175 * 1024**3 # Default visual limit if none
         
     used_bytes = client.get("used_bytes", 0)
     expire_ts = client.get("expire", 0)
@@ -61,6 +59,17 @@ async def sub_handler(request: web.Request) -> web.Response:
     
     # Красивые названия серверов
     final_links = []
+    
+    uuid = client.get("uuid", "00000000-0000-0000-0000-000000000000")
+    
+    def make_dummy(text: str) -> str:
+        safe_text = urllib.parse.quote(text, safe="")
+        return f"vless://{uuid}@1.1.1.1:443?encryption=none&security=none&type=tcp#{safe_text}"
+        
+    final_links.append(make_dummy("🚀 Надежный VLESS VPN"))
+    final_links.append(make_dummy("🛡️ Обходит блокировки"))
+    final_links.append(make_dummy("💨 Не режет скорость"))
+    
     for sl in sub_links:
         if "#" in sl:
             name_part = urllib.parse.unquote(sl.split("#")[1])
