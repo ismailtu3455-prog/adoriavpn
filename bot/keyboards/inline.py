@@ -285,8 +285,3 @@ def invoices_list_kb(invoices: list, page: int, sort_mode: str, has_search: bool
     builder.row(InlineKeyboardButton(text="Назад", callback_data="adm:manage"))
     return builder.as_markup()
 
-def admin_channel_setup_kb(bot_username: str) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="➕ Добавить бота в канал", url=f"https://t.me/{bot_username}?startchannel=true&admin=post_messages"))
-    builder.row(InlineKeyboardButton(text="Назад", callback_data="adm:manage"))
-    return builder.as_markup()

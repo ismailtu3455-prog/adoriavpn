@@ -411,16 +411,6 @@ async def cb_my(c: CallbackQuery):
 
 from ..states import WithdrawalState
 
-@router.callback_query(F.data == "withdraw")
-async def cb_withdraw(c: CallbackQuery, state: FSMContext):
-    user = await crud.get_user(c.from_user.id)
-    if not user or user.balance < 500:
-        return await c.answer("❌ Минимальная сумма для вывода: 500 ₽", show_alert=True)
-        
-    await c.message.edit_text("💸 <b>Вывод средств</b>\n\nОтправьте реквизиты для перевода (Например: Сбербанк, 1234567890123456, Иван И.):", reply_markup=inline.back_to_buy_kb())
-    await state.set_state(WithdrawalState.wait_for_details)
-    await state.update_data(w_amount=user.balance)
-
 @router.message(WithdrawalState.wait_for_details)
 async def process_withdraw(m: Message, state: FSMContext):
     data = await state.get_data()
@@ -428,6 +418,8 @@ async def process_withdraw(m: Message, state: FSMContext):
     details = m.text
     
     # Deduct balance
+
+
     await crud.add_user_balance(m.from_user.id, -amount)
     w_id = await crud.create_withdrawal(m.from_user.id, amount, details)
     
