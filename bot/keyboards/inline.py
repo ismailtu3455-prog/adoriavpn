@@ -96,37 +96,40 @@ def mandatory_sub_kb(channel_url: str) -> InlineKeyboardMarkup:
 
 def admin_menu_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="📊 Статистика", callback_data="adm:stats"))
-    builder.row(InlineKeyboardButton(text="⚙️ Управление", callback_data="adm:manage"))
+    builder.row(InlineKeyboardButton(text="📊 Статистика", callback_data="adm:stats"),
+                InlineKeyboardButton(text="⚙️ Управление", callback_data="adm:manage"))
     builder.row(InlineKeyboardButton(text="💳 Системы оплат", callback_data="adm:payments"))
-    builder.row(InlineKeyboardButton(text="В меню бота", callback_data="back"))
+    builder.row(InlineKeyboardButton(text="⬅️ В меню бота", callback_data="back"))
     return builder.as_markup()
 
 def admin_manage_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🔍 Поиск юзера", callback_data="adm:find_user"),
-                InlineKeyboardButton(text="🎁 Выдать VPN", callback_data="adm:grant_vpn"))
-    builder.row(InlineKeyboardButton(text="💳 Одобрить счет", callback_data="adm:payinvoice"),
-                InlineKeyboardButton(text="📢 Рассылка", callback_data="adm:broadcast"))
     
+    builder.row(InlineKeyboardButton(text="🔍 Поиск юзера", callback_data="adm:find_user"),
+                InlineKeyboardButton(text="📢 Рассылка", callback_data="adm:broadcast"))
+                
+    builder.row(InlineKeyboardButton(text="🎁 Выдать VPN", callback_data="adm:grant_vpn"),
+                InlineKeyboardButton(text="💳 Одобрить счет", callback_data="adm:payinvoice"))
+                
+    builder.row(InlineKeyboardButton(text="📋 Тарифы", callback_data="adm:plans"),
+                InlineKeyboardButton(text="🎟 Промокоды", callback_data="adm:promos"))
+                
+    builder.row(InlineKeyboardButton(text="👥 Админы", callback_data="adm:admins"),
+                InlineKeyboardButton(text="⚙️ Каналы", callback_data="adm:channels_setup"))
+                
     builder.row(InlineKeyboardButton(text="⚙️ Рефералы", callback_data="adm:ref_setup"),
-                InlineKeyboardButton(text="⚙️ Тест и Лимиты", callback_data="adm:test_setup"))
+                InlineKeyboardButton(text="⚙️ Лимиты и Тест", callback_data="adm:test_setup"))
                 
     builder.row(InlineKeyboardButton(text="🎁 Создать Gift Card", callback_data="adm:gift_create"))
                 
-    builder.row(InlineKeyboardButton(text="👥 Админы", callback_data="adm:admins"),
-                InlineKeyboardButton(text="📋 Тарифы", callback_data="adm:plans"),
-                InlineKeyboardButton(text="🎟 Промо", callback_data="adm:promos"))
-    
-    builder.row(InlineKeyboardButton(text="⚙️ Настройки каналов", callback_data="adm:channels_setup"))
-    builder.row(InlineKeyboardButton(text="Назад", callback_data="adm:home"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data="adm:home"))
     return builder.as_markup()
 
 def admin_channels_setup_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="📢 Основной канал (Обяз. подписка)", callback_data="adm:set_main_channel"))
-    builder.row(InlineKeyboardButton(text="🔔 Канал уведомлений (Логи покупок)", callback_data="adm:set_pay_channel"))
-    builder.row(InlineKeyboardButton(text="Назад", callback_data="adm:manage"))
+    builder.row(InlineKeyboardButton(text="🔔 Канал уведомлений (Логи)", callback_data="adm:set_pay_channel"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data="adm:manage"))
     return builder.as_markup()
 
 def admin_channel_setup_kb(bot_username: str) -> InlineKeyboardMarkup:
