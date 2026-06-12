@@ -219,6 +219,17 @@ async def process_grant_days(m: Message, state: FSMContext):
     success = await deliver_vpn(m.bot, user_id, days, is_purchase=False)
     if success:
         await m.answer(f"✅ VPN успешно выдан юзеру <code>{user_id}</code> на {days} дней!", reply_markup=inline.admin_menu_kb())
+        
+        from ..config import db_settings
+        channel_id = db_settings.get("payment_channel_id")
+        if channel_id:
+            try:
+                await m.bot.send_message(
+                    chat_id=int(channel_id),
+                    text=f"🎁 <b>Выдан VPN (Админ)</b>\nКому: <a href='tg://user?id={user_id}'>{user_id}</a>\nДней: {days}\nАдмин: <a href='tg://user?id={m.from_user.id}'>{m.from_user.id}</a>"
+                )
+            except Exception:
+                pass
     else:
         await m.answer(f"❌ Ошибка при выдаче VPN. Проверьте логи.", reply_markup=inline.admin_menu_kb())
     await state.clear()
@@ -312,6 +323,17 @@ async def cb_inv_approve(c: CallbackQuery, state: FSMContext):
         if plan:
             await crud.process_referral_bonus(c.bot, inv.user_id, plan.price)
         await c.answer("✅ Успешно одобрено и VPN выдан!", show_alert=True)
+        
+        from ..config import db_settings
+        channel_id = db_settings.get("payment_channel_id")
+        if channel_id:
+            try:
+                await c.bot.send_message(
+                    chat_id=int(channel_id),
+                    text=f"💰 <b>Одобрена ручная оплата!</b>\nПользователь: <a href='tg://user?id={inv.user_id}'>{inv.user_id}</a>\nСумма: {inv.amount} {inv.asset}\nТариф: {inv.days} дней"
+                )
+            except Exception:
+                pass
     else:
         await c.answer("❌ Одобрено, но произошла ошибка при выдаче VPN", show_alert=True)
         
