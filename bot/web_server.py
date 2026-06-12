@@ -4,6 +4,8 @@ import logging
 from aiohttp import web
 from .database import crud
 from .services import vpn
+from .config import db_settings
+from .config import db_settings
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +29,10 @@ async def sub_handler(request: web.Request) -> web.Response:
     # Get traffic stats
     limit_bytes = client.get("traffic_limit_bytes", 0)
     if not limit_bytes or limit_bytes == 0:
-        limit_bytes = 175 * 1024**3 # Default visual limit
+        default_limit = int(db_settings.get("default_limit_gb", 175))
+        if default_limit == 0:
+            default_limit = 175
+        limit_bytes = default_limit * 1024**3
         
     used_bytes = client.get("used_bytes", 0)
     expire_ts = client.get("expire", 0)
@@ -102,7 +107,10 @@ async def handle_info(request: web.Request) -> web.Response:
     used_bytes = client.get("used_bytes", 0)
     limit_bytes = client.get("traffic_limit_bytes", 0)
     if not limit_bytes or limit_bytes == 0:
-        limit_bytes = 175 * 1024**3 # Default visual limit
+        default_limit = int(db_settings.get("default_limit_gb", 175))
+        if default_limit == 0:
+            default_limit = 175
+        limit_bytes = default_limit * 1024**3
     
     used_gb = round(used_bytes / (1024**3), 2)
     limit_text = f"{round(limit_bytes / (1024**3), 2)} GB"
