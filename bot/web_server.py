@@ -26,6 +26,8 @@ async def sub_handler(request: web.Request) -> web.Response:
         
     # Get traffic stats
     limit_bytes = client.get("traffic_limit_bytes", 0)
+    if not limit_bytes or limit_bytes == 0:
+        limit_bytes = 175 * 1024**3 # Default visual limit
         
     used_bytes = client.get("used_bytes", 0)
     expire_ts = client.get("expire", 0)
@@ -105,9 +107,11 @@ async def handle_info(request: web.Request) -> web.Response:
     uuid = client.get("uuid", "Неизвестно")
     used_bytes = client.get("used_bytes", 0)
     limit_bytes = client.get("traffic_limit_bytes", 0)
+    if not limit_bytes or limit_bytes == 0:
+        limit_bytes = 175 * 1024**3 # Default visual limit
     
     used_gb = round(used_bytes / (1024**3), 2)
-    limit_text = "∞" if not limit_bytes or limit_bytes == 0 else f"{round(limit_bytes / (1024**3), 2)} GB"
+    limit_text = f"{round(limit_bytes / (1024**3), 2)} GB"
     
     html = f"""<!DOCTYPE html>
 <html>
