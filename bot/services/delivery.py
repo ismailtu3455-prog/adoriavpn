@@ -14,7 +14,15 @@ async def deliver_vpn(bot: Bot, user_id: int, days: int, is_purchase: bool = Fal
     name = u.vpn_name
     try:
         if name:
-            await extend_client(name, days)
+            try:
+                await extend_client(name, days)
+            except Exception as e:
+                if "not_found" in str(e).lower() or "404" in str(e):
+                    from ..config import db_settings
+                    limit = int(db_settings.get("default_limit_gb", 0))
+                    await create_client(name, days, limit_gb=limit)
+                else:
+                    raise e
         else:
             name = f"tg{user_id}{secrets.token_hex(2)}"
             from ..config import db_settings
