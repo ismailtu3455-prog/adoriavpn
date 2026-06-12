@@ -169,7 +169,11 @@ async def cb_my(c: CallbackQuery):
     try:
         data = await vpn.get_client(user.vpn_name)
         client_data = data.get("client") or data
-        sub = client_data.get("subscription_url", "-")
+        original_sub = client_data.get("subscription_url", "-")
+        import urllib.parse
+        from ..config import settings
+        bot_ip = urllib.parse.urlparse(settings.vpn_api_url).hostname
+        sub = f"http://{bot_ip}:8080/sub/{c.from_user.id}"
         left = client_data.get("left_days", "?")
         links = client_data.get("links", {})
         ws_link = links.get("ws", "")
@@ -182,7 +186,7 @@ async def cb_my(c: CallbackQuery):
         links_text = ""
         try:
             async with aiohttp.ClientSession() as s:
-                async with s.get(sub) as r:
+                async with s.get(original_sub) as r:
                     text = await r.text()
                     decoded = base64.b64decode(text).decode('utf-8')
                     sub_links = [l.strip() for l in decoded.split('\n') if l.strip().startswith('vless://')]

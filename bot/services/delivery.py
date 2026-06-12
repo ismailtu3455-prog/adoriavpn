@@ -24,7 +24,11 @@ async def deliver_vpn(bot: Bot, user_id: int, days: int, is_purchase: bool = Fal
             
         data = await get_client(name)
         client_data = data.get("client") or data
-        sub = client_data.get("subscription_url", "-")
+        original_sub = client_data.get("subscription_url", "-")
+        import urllib.parse
+        from ..config import settings
+        bot_ip = urllib.parse.urlparse(settings.vpn_api_url).hostname
+        sub = f"http://{bot_ip}:8080/sub/{user_id}"
         links = client_data.get("links", {})
         ws_link = links.get("ws", "")
         reality_link = links.get("reality", "")
@@ -36,7 +40,7 @@ async def deliver_vpn(bot: Bot, user_id: int, days: int, is_purchase: bool = Fal
         links_text = ""
         try:
             async with aiohttp.ClientSession() as s:
-                async with s.get(sub) as r:
+                async with s.get(original_sub) as r:
                     text = await r.text()
                     decoded = base64.b64decode(text).decode('utf-8')
                     sub_links = [l.strip() for l in decoded.split('\n') if l.strip().startswith('vless://')]

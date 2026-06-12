@@ -14,6 +14,7 @@ from .handlers import user, payments, admin
 from .services import vpn, cryptopay, tome
 from .services.delivery import deliver_vpn
 from .config import db_settings
+from .web_server import start_web_server
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -160,6 +161,7 @@ async def main():
     
     asyncio.create_task(background_payment_checker())
     asyncio.create_task(background_expiry_checker())
+    asyncio.create_task(start_web_server())
     
     log.info("Bot started!")
     await dp.start_polling(bot)
