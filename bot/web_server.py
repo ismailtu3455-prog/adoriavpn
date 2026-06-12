@@ -18,7 +18,8 @@ async def sub_handler(request: web.Request) -> web.Response:
         return web.Response(text="User or VPN not found", status=404)
         
     try:
-        client = await vpn.get_client(user.vpn_name)
+        data = await vpn.get_client(user.vpn_name)
+        client = data.get("client") or data
     except Exception as e:
         log.error(f"Failed to fetch client for sub proxy: {e}")
         return web.Response(text="Failed to fetch VPN data", status=500)
@@ -37,7 +38,23 @@ async def sub_handler(request: web.Request) -> web.Response:
         "profile-title": "Adoria VPN"
     }
     
-    sub_links = client.get("sub_links", [])
+    sub_links = []
+    original_sub = client.get("subscription_url")
+    if original_sub:
+        import aiohttp
+        try:
+            async with aiohttp.ClientSession() as s:
+                async with s.get(original_sub) as r:
+                    text = await r.text()
+                    decoded = base64.b64decode(text).decode('utf-8')
+                    sub_links = [l.strip() for l in decoded.split('\n') if l.strip().startswith('vless://')]
+        except Exception as e:
+            log.error(f"Failed to fetch original sub: {e}")
+            
+    if not sub_links:
+        # Fallback to direct links if sub_url failed
+        links = client.get("links", {})
+        sub_links = [l for l in links.values() if l and l.startswith('vless://')]
     
     uuid = client.get("uuid", "00000000-0000-0000-0000-000000000000")
     
