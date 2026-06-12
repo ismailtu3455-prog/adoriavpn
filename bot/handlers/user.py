@@ -106,7 +106,7 @@ async def cb_reissue_key(c: CallbackQuery):
     if user.last_reissue and (now - user.last_reissue).days < 30:
         builder = InlineKeyboardBuilder()
         builder.row(InlineKeyboardButton(text="💳 Оплатить перевыпуск (50 ₽)", callback_data="pay_reissue_50"))
-        builder.row(InlineKeyboardButton(text="Назад", callback_data="my"))
+        builder.row(InlineKeyboardButton(text="⬅️ В меню", callback_data="back"))
         await c.message.edit_text(
             "⚠️ Вы уже перевыпускали ключ за последние 30 дней.\n"
             "Бесплатный перевыпуск доступен только 1 раз в месяц.\n"
@@ -157,7 +157,9 @@ async def _do_reissue(c: CallbackQuery, user, now):
         await vpn.delete_client(user.vpn_name)
         await vpn.create_client(user.vpn_name, days_left, limit_gb)
     except Exception as e:
-        await c.message.edit_text("❌ Произошла ошибка при создании нового ключа.", reply_markup=inline.back_kb())
+        import logging
+        logging.error(f"Reissue error: {e}")
+        await c.message.edit_text(f"❌ Произошла ошибка при создании нового ключа. Детали: {e}", reply_markup=inline.back_kb())
         return
         
     from sqlalchemy.ext.asyncio import AsyncSessionLocal

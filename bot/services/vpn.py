@@ -31,7 +31,14 @@ async def get_client(name: str) -> dict:
     return await _request("GET", f"/info?name={name}")
 
 async def delete_client(name: str) -> dict:
-    return await _request("DELETE", f"/clients/{name}")
+    try:
+        return await _request("DELETE", f"/clients/{name}")
+    except VPNAPIError as e:
+        # Fallback to other possible API routes
+        try:
+            return await _request("POST", "/delete", {"name": name})
+        except VPNAPIError:
+            return await _request("DELETE", f"/delete?name={name}")
 
 async def list_clients() -> dict:
     return await _request("GET", "/clients")
