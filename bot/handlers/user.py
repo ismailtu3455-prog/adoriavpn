@@ -80,15 +80,6 @@ async def cmd_start(m: Message, command: CommandObject):
     # Check mandatory sub
     from ..config import db_settings
     main_channel_id = db_settings.get("main_channel_id")
-    if main_channel_id and user and not user.tos_accepted:
-        try:
-            member = await m.bot.get_chat_member(main_channel_id, m.from_user.id)
-            if member.status in ["member", "administrator", "creator"]:
-                await crud.update_user_tos_accepted(m.from_user.id)
-                user.tos_accepted = True
-        except Exception:
-            pass
-            
     if main_channel_id and (not user or not user.tos_accepted):
         main_channel_url = db_settings.get("main_channel_url", "https://t.me/durov")
         await m.answer(
@@ -250,8 +241,10 @@ async def cb_check_mandatory_sub(c: CallbackQuery):
             await c.answer("✅ Подписка подтверждена!", show_alert=True)
         else:
             await c.answer("❌ Вы не подписались на канал!", show_alert=True)
-    except Exception:
-        await c.answer("❌ Ошибка проверки. Возможно бот не админ в канале.", show_alert=True)
+    except Exception as e:
+        import logging
+        logging.error(f"check_mandatory_sub error: {e}")
+        await c.answer(f"❌ Ошибка проверки: {e}", show_alert=True)
 
 @router.callback_query(F.data == "help")
 async def cb_help(c: CallbackQuery):
